@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mouse Tester</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bg:#eef1f5;--panel:#fff;--ink:#1c2733;--line:#2b3440;--btn:#f6f7f9;--press:#2f6df6;--ok:#c9edd6;--okl:#2e9e5b;--bad:#f6c9c9;--badl:#d64545;--b1:#dce8fb;--b2:#6f8fd0;--cur:#5b6f85;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;user-select:none;-webkit-user-select:none}
+body.big,body.big *{cursor:none!important}
+.app{display:grid;grid-template-columns:1fr 1fr;width:100%;max-width:1060px;background:var(--panel);border:2px solid var(--line)}
+section{padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:22px;min-width:0}
+section+section{border-left:2px solid var(--line)}
+#mouse{width:min(200px,50vw);height:auto;overflow:visible}
+#mouse .b{fill:var(--btn);transition:fill .06s}
+#mouse .b.on{fill:var(--press)}
+#mouse .ln,#mouse .out,#mouse .wh{stroke:var(--line);stroke-width:3;fill:none}
+#mouse .wh{fill:var(--btn)}
+#mouse .wh.on{fill:var(--press)}
+#mouse .sd{fill:var(--btn);stroke:var(--line);stroke-width:2}
+#mouse .sd.on{fill:var(--press)}
+.status{border:2px solid var(--line);border-radius:10px;padding:10px 18px;min-width:min(300px,100%);text-align:center;font-size:1.02rem}
+.size{display:flex;gap:10px;align-items:center;font-size:.9rem}
+.size input{width:130px;accent-color:var(--press)}
+.inv{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;min-height:50px}
+.tok,#ghost{font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif}
+.tok{width:46px;height:46px;border:2px solid var(--line);display:grid;place-items:center;font-size:28px;background:var(--panel);touch-action:none}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);width:min(350px,100%);border:2px solid var(--line)}
+.cell{aspect-ratio:1/1;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.95rem;transition:background .15s}
+.cell .tok{border:0;background:none;width:auto;height:auto;font-size:34px;pointer-events:auto}
+.cell.ok{background:var(--ok);box-shadow:inset 0 0 0 3px var(--okl)}
+.cell.bad{background:var(--bad);box-shadow:inset 0 0 0 3px var(--badl);animation:shake .3s}
+.cell.hov{outline:3px dashed var(--press);outline-offset:-5px}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.ctl{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.ctl button{width:100px;padding:9px 0;font:inherit;color:#1c2733;background:var(--b1);border:2px solid var(--b2);border-radius:8px}
+.ctl button:hover{filter:brightness(.96)}
+.ctl button:disabled{opacity:.45}
+.ctl button:focus-visible,.size input:focus-visible{outline:3px solid var(--press);outline-offset:2px}
+#ghost{position:fixed;left:0;top:0;pointer-events:none;z-index:50;font-size:44px;display:none;transform:translate(-50%,-50%)}
+#cur{position:fixed;left:0;top:0;z-index:100;pointer-events:none;display:none;will-change:transform}
+#cur svg{display:block;width:var(--cs,64px);height:auto;transform-origin:2px 2px;transition:transform .07s}
+#cur.dn svg{transform:scale(.82)}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:80}
+#win{position:fixed;inset:0;display:none;place-items:center;z-index:90;background:rgba(10,15,25,.45)}
+#win.show{display:grid}
+#win .card{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:28px 36px;text-align:center;animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+#win h2{margin:0 0 6px;font-size:2rem}
+#win p{margin:0 0 18px}
+#win button{font:inherit;padding:9px 22px;border-radius:8px;border:2px solid var(--b2);background:var(--b1);color:#1c2733}
+@keyframes pop{from{transform:scale(.4);opacity:0}}
+@media (max-width:760px){.app{grid-template-columns:1fr}section+section{border-left:0;border-top:2px solid var(--line)}}
+@media (prefers-reduced-motion:reduce){.cell.bad,#win .card{animation:none}}
+</style>
+</head>
+<body>
+<main class="app">
+  <section>
+    <svg id="mouse" viewBox="0 0 200 300" aria-label="Mouse">
+      <defs><clipPath id="c"><rect x="10" y="10" width="180" height="280" rx="90"/></clipPath></defs>
+      <g clip-path="url(#c)">
+        <rect class="b" id="b0" x="0" y="0" width="100" height="110"/>
+        <rect class="b" id="b2" x="100" y="0" width="100" height="110"/>
+        <rect class="b" x="0" y="110" width="200" height="200"/>
+      </g>
+      <path class="ln" d="M10 110H190M100 10V110"/>
+      <rect class="out" x="10" y="10" width="180" height="280" rx="90"/>
+      <rect class="wh" id="b1" x="88" y="42" width="24" height="46" rx="12"/>
+      <rect class="sd" id="b3" x="2" y="130" width="12" height="34" rx="5"/>
+      <rect class="sd" id="b4" x="2" y="172" width="12" height="34" rx="5"/>
+    </svg>
+    <div class="status" id="status" aria-live="polite">Press any mouse button</div>
+    <label class="size">Pointer size <input type="range" id="sz" min="24" max="140" value="64"></label>
+  </section>
+  <section>
+    <div class="inv" id="inv"></div>
+    <div class="grid" id="grid"></div>
+    <div class="ctl">
+      <button id="undo">Undo</button><button id="redo">Redo</button><button id="reset">Reset</button>
+    </div>
+  </section>
+</main>
+
+<div id="ghost"></div>
+<div id="cur"><svg viewBox="0 0 24 34"><path d="M2 2V27L8.5 21L13.5 32L18 30L13 19.5H22Z" fill="var(--cur)" stroke="#1c2733" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+<canvas id="fx"></canvas>
+<div id="win"><div class="card"><h2>Congratulations!</h2><p>Every fruit is in its place. Your mouse works great.</p><button id="again">Play again</button></div></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const F=[["Apple","🍎"],["Lemon","🍋"],["Watermelon","🍉"],["Pineapple","🍍"],["Coconut","🥥"],["Mango","🥭"],["Grapes","🍇"],["Banana","🍌"],["Avocado","🥑"]];
+const ANS=[0,7,5,1,6,8,2,3,4]; // fruit id expected in each cell
+let grid=Array(9).fill(null),hist=[grid.slice()],pos=0,won=false,drag=null,badCell=-1;
+
+/* ---------- mouse tester ---------- */
+const NAMES=["Left","Middle","Right","Back","Forward"],down=new Set(),cur=$("cur");
+function paint(){
+  for(let i=0;i<5;i++)$("b"+i).classList.toggle("on",down.has(i));
+  const a=[...down].sort().map(i=>NAMES[i]);
+  $("status").textContent=a.length?(a.length==1?a[0]+" Mouse Button Pressed":a.join(" + ")+" Mouse Buttons Pressed"):"Press any mouse button";
+  cur.classList.toggle("dn",down.size>0);
+}
+addEventListener("mousedown",e=>{down.add(e.button);paint();if(e.button!==0)e.preventDefault()});
+addEventListener("mouseup",e=>{down.delete(e.button);paint();if(e.button>2)e.preventDefault()});
+addEventListener("auxclick",e=>e.preventDefault());
+addEventListener("contextmenu",e=>e.preventDefault());
+addEventListener("blur",()=>{down.clear();paint()});
+let wt;
+addEventListener("wheel",e=>{
+  $("status").textContent="Scrolling "+(e.deltaY<0?"Up":"Down");
+  $("b1").classList.add("on");clearTimeout(wt);wt=setTimeout(paint,350);
+},{passive:true});
+
+/* big cursor */
+$("sz").oninput=e=>cur.style.setProperty("--cs",e.target.value+"px");
+addEventListener("pointermove",e=>{
+  if(e.pointerType!=="mouse")return;
+  document.body.classList.add("big");cur.style.display="block";
+  cur.style.transform=`translate(${e.clientX-2}px,${e.clientY-2}px)`;
+  if(drag)moveDrag(e);
+});
+document.addEventListener("mouseleave",()=>cur.style.display="none");
+document.addEventListener("mouseenter",()=>{if(document.body.classList.contains("big"))cur.style.display="block"});
+
+/* ---------- game ---------- */
+const ok=i=>grid[i]!==null&&grid[i]===ANS[i];
+function render(){
+  const inv=$("inv");inv.innerHTML="";
+  F.forEach((f,id)=>{if(grid.includes(id))return;
+    const t=document.createElement("div");t.className="tok";t.textContent=f[1];t.title=f[0];
+    t.dataset.id=id;t.dataset.src="inv";inv.appendChild(t)});
+  const g=$("grid");g.innerHTML="";
+  ANS.forEach((a,i)=>{
+    const c=document.createElement("div");c.className="cell";c.dataset.i=i;
+    const v=grid[i];
+    if(v!==null){c.classList.add(ok(i)?"ok":"bad");
+      const t=document.createElement("div");t.className="tok";t.textContent=F[v][1];t.dataset.id=v;
+      if(!ok(i)){t.dataset.src="cell";t.dataset.from=i}
+      c.appendChild(t)}
+    const l=document.createElement("span");l.textContent=F[a][0];c.appendChild(l);
+    g.appendChild(c)});
+  $("undo").disabled=pos===0;$("redo").disabled=pos===hist.length-1;
+  const all=ANS.every((_,i)=>ok(i));
+  if(all&&!won){won=true;party()}
+  if(!all){won=false;$("win").classList.remove("show")}
+}
+function commit(){hist=hist.slice(0,pos+1);hist.push(grid.slice());pos++;render()}
+function moveDrag(e){
+  const gh=$("ghost");gh.style.left=e.clientX+"px";gh.style.top=e.clientY+"px";
+  document.querySelectorAll(".cell.hov").forEach(c=>c.classList.remove("hov"));
+  const c=document.elementFromPoint(e.clientX,e.clientY)?.closest(".cell");
+  if(c&&!ok(+c.dataset.i))c.classList.add("hov");
+}
+document.addEventListener("pointerdown",e=>{
+  if(e.button!==0)return;
+  const t=e.target.closest(".tok[data-src]");if(!t)return;
+  e.preventDefault();
+  drag={id:+t.dataset.id,from:t.dataset.from===undefined?null:+t.dataset.from};
+  const gh=$("ghost");gh.textContent=F[drag.id][1];gh.style.display="block";moveDrag(e);
+});
+addEventListener("pointerup",e=>{
+  if(!drag)return;
+  document.querySelectorAll(".cell.hov").forEach(c=>c.classList.remove("hov"));
+  $("ghost").style.display="none";
+  const c=document.elementFromPoint(e.clientX,e.clientY)?.closest(".cell");
+  const d=drag;drag=null;
+  if(c){
+    const i=+c.dataset.i;
+    if(ok(i)||i===d.from){render();return}
+    if(d.from!==null)grid[d.from]=null;
+    grid[i]=d.id;commit();
+  }else if(d.from!==null){grid[d.from]=null;commit()}
+  else render();
+});
+$("undo").onclick=()=>{if(pos>0){pos--;grid=hist[pos].slice();render()}};
+$("redo").onclick=()=>{if(pos<hist.length-1){pos++;grid=hist[pos].slice();render()}};
+$("reset").onclick=()=>{grid=Array(9).fill(null);commit()};
+$("again").onclick=()=>{$("win").classList.remove("show");$("reset").click()};
+
+/* ---------- party ---------- */
+const cv=$("fx"),cx=cv.getContext("2d");let parts=[],raf;
+function size(){cv.width=innerWidth;cv.height=innerHeight}size();addEventListener("resize",size);
+function party(){
+  $("win").classList.add("show");
+  const cols=["#ff4d6d","#ffd166","#06d6a0","#4d8bff","#b56cff","#ff9f1c"];
+  for(let k=0;k<220;k++){
+    const left=k%2;
+    parts.push({x:left?0:cv.width,y:cv.height*.8,vx:(left?1:-1)*(4+Math.random()*9),vy:-(8+Math.random()*13),
+      w:6+Math.random()*7,h:4+Math.random()*6,r:Math.random()*6,vr:(Math.random()-.5)*.4,c:cols[k%6],life:0});
+  }
+  cancelAnimationFrame(raf);(function loop(){
+    cx.clearRect(0,0,cv.width,cv.height);
+    parts.forEach(p=>{p.vy+=.28;p.vx*=.992;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;p.life++;
+      cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.fillStyle=p.c;cx.fillRect(-p.w/2,-p.h/2,p.w,p.h);cx.restore()});
+    parts=parts.filter(p=>p.y<cv.height+20&&p.life<400);
+    if(parts.length)raf=requestAnimationFrame(loop);else cx.clearRect(0,0,cv.width,cv.height);
+  })();
+}
+render();
+</script>
+</body>
+</html>
